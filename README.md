@@ -50,11 +50,11 @@ connectionState.subscribe((isConnected: boolean) => {
 
 ## Api
 
-| Property         | Description                                         | Type                                                    |
-| ---------------- | --------------------------------------------------- | ------------------------------------------------------- |
-| connectionStatus | Return connection status observable                | `connectionStatus(): Observable<boolean>;` |
-| on               | A function that handle events given from the server | `on(event: string | 'close', cb: (data?: any) => void): void;` |
-| emit             | A function for sending data to the server           | `emit(event: string, data: object | string): void;` |
+| Property         | Description                                         | Type                                                              |
+| ---------------- | --------------------------------------------------- | ----------------------------------------------------------------- |
+| connectionStatus | Return connection status observable                 | connectionStatus(): Observable<boolean>;                          |
+| on               | A function that handle events given from the server | on(event: string &#124; 'close', cb: (data?: any) => void): void; |
+| emit             | A function for sending data to the server           | emit(event: string, data: object &#124; string): void;            |
 
 ## LICENSE
 
