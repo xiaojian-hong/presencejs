@@ -61,7 +61,7 @@ export default class YoMoClient<T> extends Subject<T> {
     }
 
     /**
-     * returns connection status observable
+     * return connection status observable
      *
      * @return {YoMoClientConnectionStatusObserver}
      */

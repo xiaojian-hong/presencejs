@@ -4,8 +4,16 @@ YoMo browser sdk
 
 ## Installation
 
-```bash
-npm install yomo-js
+Using npm:
+
+```
+$ npm i --save yomo-js
+```
+
+Or yarn:
+
+```
+$ yarn add yomo-js
 ```
 
 ## Usage
@@ -19,18 +27,18 @@ const yomoclient = new YoMoClient('ws://localhost:3000', {
     reconnectAttempts: 3, // The reconnection attempts value.
 });
 
-// function that handle events given from the server
+// A function that handle events given from the server
 yomoclient.on('online', data => {
     console.log('online:', data);
 });
 
-// returns connection status observable
+// Return connection status observable
 const connectionState = yomoclient.connectionStatus();
 
-// subscribe to connection status.
+// Subscribe to connection status.
 connectionState.subscribe((isConnected: boolean) => {
     if (isConnected) {
-        // function for sending data to the server
+        // A function for sending data to the server
         yomoclient.emit('online', {
             id: 'ID',
             x: 10,
@@ -40,6 +48,16 @@ connectionState.subscribe((isConnected: boolean) => {
 });
 ```
 
+## Api
+
+| Property         | Description                                         | Type                                                    |
+| ---------------- | --------------------------------------------------- | ------------------------------------------------------- |
+| connectionStatus | Return connection status observable                | `connectionStatus(): Observable<boolean>;` |
+| on               | A function that handle events given from the server | `on(event: string | 'close', cb: (data?: any) => void): void;` |
+| emit             | A function for sending data to the server           | `emit(event: string, data: object | string): void;` |
+
 ## LICENSE
 
-[MIT](LICENSE)
+<a href="/LICENSE" target="_blank">
+    <img alt="License: MIT" src="https://img.shields.io/badge/License-MIT-blue.svg" />
+</a>
