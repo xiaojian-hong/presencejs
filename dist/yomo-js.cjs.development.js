@@ -1737,7 +1737,7 @@ function getProtocol(url) {
   return url.split(':')[0];
 }
 /**
- * @param {String} path wasm file path
+ * @param {RequestInfo} path wasm file path
  */
 
 
