@@ -244,7 +244,7 @@ function getProtocol(url: string) {
 }
 
 /**
- * @param {String} path wasm file path
+ * @param {RequestInfo} path wasm file path
  */
 async function loadWasm(path: RequestInfo): Promise<void> {
     // This is a polyfill for FireFox and Safari
