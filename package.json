@@ -42,7 +42,6 @@
   "author": "osdodo",
   "module": "dist/yomo-js.esm.js",
   "devDependencies": {
-    "@size-limit/preset-small-lib": "^7.0.3",
     "husky": "^7.0.4",
     "jest-fetch-mock": "^3.0.3",
     "tsdx": "^0.14.1",
