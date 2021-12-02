@@ -8,9 +8,7 @@ type WebSocketMessage = {
     data: string | object;
 };
 
-export type YoMoClientConnectionStatusObserver = Observable<boolean>;
-
-export interface YoMoClientOption {
+interface YoMoClientOption {
     // The reconnection interval value.
     reconnectInterval?: number;
     // The reconnection attempts value.
@@ -63,9 +61,9 @@ export default class YoMoClient<T> extends Subject<T> {
     /**
      * return connection status observable
      *
-     * @return {YoMoClientConnectionStatusObserver}
+     * @return {Observable<boolean>}
      */
-    connectionStatus(): YoMoClientConnectionStatusObserver {
+    connectionStatus(): Observable<boolean> {
         return this.connectionStatus$.pipe(distinctUntilChanged());
     }
 

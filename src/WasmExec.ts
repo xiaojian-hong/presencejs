@@ -4,15 +4,6 @@
 //
 // This file has been modified for use by the TinyGo compiler.
 
-// Map multiple JavaScript environments to a single common API,
-// preferring web standards over Node.js API.
-//
-// Environments considered:
-// - Browsers
-// - Node.js
-// - Electron
-// - Parcel
-
 // @ts-nocheck
 if (typeof global !== 'undefined') {
     // global already exists
@@ -26,169 +17,6 @@ if (typeof global !== 'undefined') {
     );
 }
 
-if (!global.require && typeof require !== 'undefined') {
-    global.require = require;
-}
-
-if (!global.fs && global.require) {
-    global.fs = require('fs');
-}
-
-const enosys = () => {
-    const err = new Error('not implemented');
-    err.code = 'ENOSYS';
-    return err;
-};
-
-if (!global.fs) {
-    let outputBuf = '';
-    global.fs = {
-        constants: {
-            O_WRONLY: -1,
-            O_RDWR: -1,
-            O_CREAT: -1,
-            O_TRUNC: -1,
-            O_APPEND: -1,
-            O_EXCL: -1,
-        }, // unused
-        writeSync(fd, buf) {
-            outputBuf += decoder.decode(buf);
-            const nl = outputBuf.lastIndexOf('\n');
-            if (nl != -1) {
-                console.log(outputBuf.substr(0, nl));
-                outputBuf = outputBuf.substr(nl + 1);
-            }
-            return buf.length;
-        },
-        write(fd, buf, offset, length, position, callback) {
-            if (offset !== 0 || length !== buf.length || position !== null) {
-                callback(enosys());
-                return;
-            }
-            const n = this.writeSync(fd, buf);
-            callback(null, n);
-        },
-        chmod(path, mode, callback) {
-            callback(enosys());
-        },
-        chown(path, uid, gid, callback) {
-            callback(enosys());
-        },
-        close(fd, callback) {
-            callback(enosys());
-        },
-        fchmod(fd, mode, callback) {
-            callback(enosys());
-        },
-        fchown(fd, uid, gid, callback) {
-            callback(enosys());
-        },
-        fstat(fd, callback) {
-            callback(enosys());
-        },
-        fsync(fd, callback) {
-            callback(null);
-        },
-        ftruncate(fd, length, callback) {
-            callback(enosys());
-        },
-        lchown(path, uid, gid, callback) {
-            callback(enosys());
-        },
-        link(path, link, callback) {
-            callback(enosys());
-        },
-        lstat(path, callback) {
-            callback(enosys());
-        },
-        mkdir(path, perm, callback) {
-            callback(enosys());
-        },
-        open(path, flags, mode, callback) {
-            callback(enosys());
-        },
-        read(fd, buffer, offset, length, position, callback) {
-            callback(enosys());
-        },
-        readdir(path, callback) {
-            callback(enosys());
-        },
-        readlink(path, callback) {
-            callback(enosys());
-        },
-        rename(from, to, callback) {
-            callback(enosys());
-        },
-        rmdir(path, callback) {
-            callback(enosys());
-        },
-        stat(path, callback) {
-            callback(enosys());
-        },
-        symlink(path, link, callback) {
-            callback(enosys());
-        },
-        truncate(path, length, callback) {
-            callback(enosys());
-        },
-        unlink(path, callback) {
-            callback(enosys());
-        },
-        utimes(path, atime, mtime, callback) {
-            callback(enosys());
-        },
-    };
-}
-
-if (!global.process) {
-    global.process = {
-        getuid() {
-            return -1;
-        },
-        getgid() {
-            return -1;
-        },
-        geteuid() {
-            return -1;
-        },
-        getegid() {
-            return -1;
-        },
-        getgroups() {
-            throw enosys();
-        },
-        pid: -1,
-        ppid: -1,
-        umask() {
-            throw enosys();
-        },
-        cwd() {
-            throw enosys();
-        },
-        chdir() {
-            throw enosys();
-        },
-    };
-}
-
-if (!global.crypto) {
-    const nodeCrypto = require('crypto');
-    global.crypto = {
-        getRandomValues(b) {
-            nodeCrypto.randomFillSync(b);
-        },
-    };
-}
-
-if (!global.performance) {
-    global.performance = {
-        now() {
-            const [sec, nsec] = process.hrtime();
-            return sec * 1000 + nsec / 1000000;
-        },
-    };
-}
-
 if (!global.TextEncoder) {
     global.TextEncoder = require('util').TextEncoder;
 }
@@ -197,13 +25,12 @@ if (!global.TextDecoder) {
     global.TextDecoder = require('util').TextDecoder;
 }
 
-// End of polyfills for common API.fglobal
-
 const encoder = new TextEncoder('utf-8');
 const decoder = new TextDecoder('utf-8');
-var logLine = [];
+// var logLine = [];
 
-global.Go = class {
+export default class Go {
+    public importObject: WebAssembly.Imports;
     constructor() {
         this._callbackTimeouts = new Map();
         this._nextCallbackTimeoutID = 1;
@@ -218,11 +45,11 @@ global.Go = class {
             mem().setUint32(addr + 4, Math.floor(v / 4294967296), true);
         };
 
-        const getInt64 = addr => {
-            const low = mem().getUint32(addr + 0, true);
-            const high = mem().getInt32(addr + 4, true);
-            return low + high * 4294967296;
-        };
+        // const getInt64 = addr => {
+        //     const low = mem().getUint32(addr + 0, true);
+        //     const high = mem().getInt32(addr + 4, true);
+        //     return low + high * 4294967296;
+        // };
 
         const loadValue = addr => {
             const f = mem().getFloat64(addr, true);
@@ -338,13 +165,13 @@ global.Go = class {
                                 } else if (c == 10) {
                                     // LF
                                     // write line
-                                    let line = decoder.decode(
-                                        new Uint8Array(logLine)
-                                    );
-                                    logLine = [];
-                                    console.log(line);
+                                    // let line = decoder.decode(
+                                    //     new Uint8Array(logLine)
+                                    // );
+                                    // logLine = [];
+                                    // console.log(line);
                                 } else {
-                                    logLine.push(c);
+                                    // logLine.push(c);
                                 }
                             }
                         }
@@ -358,7 +185,7 @@ global.Go = class {
                 fd_fdstat_get: () => 0, // dummy
                 fd_seek: () => 0, // dummy
                 proc_exit: code => {
-                    if (global.process) {
+                    if (global && global.process) {
                         // Node.js
                         process.exit(code);
                     } else {
@@ -639,29 +466,4 @@ global.Go = class {
             return event.result;
         };
     }
-};
-
-if (
-    global.require &&
-    global.require.main === module &&
-    global.process &&
-    global.process.versions &&
-    !global.process.versions.electron
-) {
-    if (process.argv.length != 3) {
-        console.error('usage: go_js_wasm_exec [wasm binary] [arguments]');
-        process.exit(1);
-    }
-
-    const go = new Go();
-    WebAssembly.instantiate(fs.readFileSync(process.argv[2]), go.importObject)
-        .then(result => {
-            return go.run(result.instance);
-        })
-        .catch(err => {
-            console.error(err);
-            process.exit(1);
-        });
 }
-
-export default global.Go;

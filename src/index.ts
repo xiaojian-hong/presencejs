@@ -1,6 +1,3 @@
-import YoMoClient, {
-    YoMoClientOption,
-    YoMoClientConnectionStatusObserver,
-} from './YoMoClient';
+import YoMoClient from './YoMoClient';
 
-export { YoMoClient, YoMoClientOption, YoMoClientConnectionStatusObserver };
+export { YoMoClient };
