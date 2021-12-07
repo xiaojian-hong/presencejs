@@ -23,9 +23,9 @@
     "prepare": "tsdx build"
   },
   "np": {
-		"yarn": false,
-		"contents": "dist"
-	},
+    "yarn": false,
+    "contents": "dist"
+  },
   "husky": {
     "hooks": {
       "pre-commit": "tsdx lint"
@@ -42,8 +42,9 @@
   "author": "osdodo",
   "module": "dist/yomo-js.esm.js",
   "devDependencies": {
+    "@types/node-fetch": "^2.5.12",
     "husky": "^7.0.4",
-    "jest-fetch-mock": "^3.0.3",
+    "node-fetch": "^2.6.6",
     "tsdx": "^0.14.1",
     "tslib": "^2.3.1",
     "typescript": "^4.5.2"

@@ -1,14 +1,5 @@
-import { enableFetchMocks } from 'jest-fetch-mock';
-import { readFileSync } from 'fs';
+import fetch from 'node-fetch';
 import { YoMoClient } from '../src';
-
-const uuidv4 = () => {
-    return 'xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx'.replace(/[xy]/g, c => {
-        let r = (Math.random() * 16) | 0,
-            v = c === 'x' ? r : (r & 0x3) | 0x8;
-        return v.toString(16);
-    });
-};
 
 type MessageContent = {
     id: string;
@@ -18,36 +9,18 @@ type MessageContent = {
     avatar?: string;
 };
 
-describe('YoMoClient', () => {
-    const ID = uuidv4();
+// @ts-ignore
+globalThis.fetch = fetch;
 
-    beforeAll(async () => {
-        enableFetchMocks();
-        const file = readFileSync(process.cwd() + '/wasm/y3.wasm');
-        (fetch as any).mockResponse(async (request: any) => {
-            if (request.url.endsWith('y3.wasm')) {
-                return {
-                    status: 200,
-                    body: file,
-                };
-            } else {
-                return {
-                    status: 404,
-                    body: 'Not Found',
-                };
-            }
-        });
-    });
+describe('YoMoClient', () => {
+    const ID = 'TestID';
 
     it('Testing yomoclient.connectionStatus, yomoClient.emit and yomoClient.on', async () => {
         const socketURL = 'wss://ws-dev.yomo.run';
-        const yomoclient = new YoMoClient<MessageContent>(
-            `${socketURL}?clientId=${ID}`,
-            {
-                reconnectInterval: 5000,
-                reconnectAttempts: 3,
-            }
-        );
+        const yomoclient = new YoMoClient<MessageContent>(`${socketURL}`, {
+            reconnectInterval: 5000,
+            reconnectAttempts: 3,
+        });
 
         let isConnected = false;
         let onlineData: any;
@@ -85,13 +58,10 @@ describe('YoMoClient', () => {
 
     it('Testing connection status', async () => {
         const socketURL = 'wss://ws-dev.run';
-        const yomoclient = new YoMoClient<MessageContent>(
-            `${socketURL}?clientId=${ID}`,
-            {
-                reconnectInterval: 5000,
-                reconnectAttempts: 3,
-            }
-        );
+        const yomoclient = new YoMoClient<MessageContent>(`${socketURL}`, {
+            reconnectInterval: 5000,
+            reconnectAttempts: 3,
+        });
 
         let isConnected = true;
 
@@ -100,7 +70,7 @@ describe('YoMoClient', () => {
         });
 
         await new Promise(resolve => {
-            setTimeout(resolve, 1000);
+            setTimeout(resolve, 1500);
         });
 
         expect(isConnected).toBe(false);
