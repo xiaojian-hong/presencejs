@@ -2,21 +2,13 @@
 
 YoMo browser sdk
 
-## Installation
+## Installation and Usage
 
-Using npm:
+#### Using npm
 
 ```
 $ npm i --save yomo-js
 ```
-
-Or yarn:
-
-```
-$ yarn add yomo-js
-```
-
-## Usage
 
 ```js
 import { YoMoClient } from 'yomo-js';
@@ -46,6 +38,18 @@ connectionState.subscribe((isConnected: boolean) => {
         });
     }
 });
+```
+
+#### CDN
+
+For CDN, you can use [skypack](https://www.skypack.dev): 
+[https://cdn.skypack.dev/yomo-js](https://cdn.skypack.dev/yomo-js)
+
+```html
+
+<script type="module">
+    import { YoMoClient } from 'https://cdn.skypack.dev/yomo-js';
+</script>
 ```
 
 ## Api
