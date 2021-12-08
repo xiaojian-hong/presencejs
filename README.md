@@ -51,7 +51,7 @@ yomoclient.connection.on('connected', () => {
     });
 
     // or use the 'on' function
-    yomoclient.on('online', data => {
+    verse.on('online', data => {
         console.log('online:', data);
     });
 });
