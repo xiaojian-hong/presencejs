@@ -1,3 +1,3 @@
-import YoMoClient from './YoMoClient';
+import YoMoClient from './yomo-client';
 
 export { YoMoClient };

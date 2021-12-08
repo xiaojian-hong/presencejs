@@ -2,13 +2,26 @@
 
 YoMo browser sdk
 
-## Installation and Usage
+### Quickstart Guide
 
-#### Using npm
+#### 1.Add the YoMo Client Library SDK
+
+Using npm
 
 ```
 $ npm i --save yomo-js
 ```
+
+For CDN, you can use [skypack](https://www.skypack.dev):
+[https://cdn.skypack.dev/yomo-js](https://cdn.skypack.dev/yomo-js)
+
+```html
+<script type="module">
+    import { YoMoClient } from 'https://cdn.skypack.dev/yomo-js';
+</script>
+```
+
+#### 2.Connect to YoMo
 
 ```js
 import { YoMoClient } from 'yomo-js';
@@ -19,46 +32,54 @@ const yomoclient = new YoMoClient('ws://localhost:3000', {
     reconnectAttempts: 3, // The reconnection attempts value.
 });
 
-// A function that handle events given from the server
-yomoclient.on('online', data => {
-    console.log('online:', data);
-});
-
-// Return connection status observable
-const connectionState = yomoclient.connectionStatus();
-
-// Subscribe to connection status.
-connectionState.subscribe((isConnected: boolean) => {
-    if (isConnected) {
-        // A function for sending data to the server
-        yomoclient.emit('online', {
-            id: 'ID',
-            x: 10,
-            y: 10,
-        });
-    }
+yomoclient.connection.on('connected', () => {
+    console.log('Connected to YoMo');
 });
 ```
 
-#### CDN
+#### 3.Subscribe to messages from the server
 
-For CDN, you can use [skypack](https://www.skypack.dev): 
-[https://cdn.skypack.dev/yomo-js](https://cdn.skypack.dev/yomo-js)
+```js
+yomoclient.connection.on('connected', () => {
+    // Enter a room
+    const verse = yomoclient.to('001');
 
-```html
+    // converting events to observable sequences
+    const online$ = verse.fromEvent('online');
+    online$.subscribe(data => {
+        console.log('online:', data);
+    });
 
-<script type="module">
-    import { YoMoClient } from 'https://cdn.skypack.dev/yomo-js';
-</script>
+    // or use the 'on' function
+    yomoclient.on('online', data => {
+        console.log('online:', data);
+    });
+});
 ```
 
-## Api
+#### 4.Sending messages to the server
 
-| Property         | Description                                         | Type                                                              |
-| ---------------- | --------------------------------------------------- | ----------------------------------------------------------------- |
-| connectionStatus | Return connection status observable                 | connectionStatus(): Observable<boolean>;                          |
-| on               | A function that handle events given from the server | on(event: string &#124; 'close', cb: (data?: any) => void): void; |
-| emit             | A function for sending data to the server           | emit(event: string, data: object &#124; string): void;            |
+```js
+yomoclient.connection.on('connected', () => {
+    // Enter a room
+    const verse = yomoclient.to('001');
+
+    verse.emit('online', {
+        id: 'ID',
+        x: 10,
+        y: 10,
+    });
+});
+```
+
+#### 5.Close a connection to YoMo
+
+```js
+yomoclient.connection.close();
+yomoclient.connection.on('closed', () => {
+    console.log('Closed the connection to YoMo.');
+});
+```
 
 ## LICENSE
 
