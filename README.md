@@ -1,7 +1,3 @@
-# yomo-js
-
-YoMo browser sdk
-
 ### Quickstart Guide
 
 #### 1.Add the YoMo Client Library SDK
@@ -12,8 +8,7 @@ Using npm
 $ npm i --save yomo-js
 ```
 
-For CDN, you can use [skypack](https://www.skypack.dev):
-[https://cdn.skypack.dev/yomo-js](https://cdn.skypack.dev/yomo-js)
+For CDN, you can use [skypack](https://www.skypack.dev): [https://cdn.skypack.dev/yomo-js](https://cdn.skypack.dev/yomo-js)
 
 ```html
 <script type="module">
@@ -26,13 +21,13 @@ For CDN, you can use [skypack](https://www.skypack.dev):
 ```js
 import { YoMoClient } from 'yomo-js';
 
-// Create an instance.
+// create an instance.
 const yomoclient = new YoMoClient('ws://localhost:3000', {
     reconnectInterval: 5000, // The reconnection interval value.
     reconnectAttempts: 3, // The reconnection attempts value.
 });
 
-yomoclient.connection.on('connected', () => {
+yomoclient.on('connected', () => {
     console.log('Connected to YoMo');
 });
 ```
@@ -40,8 +35,8 @@ yomoclient.connection.on('connected', () => {
 #### 3.Subscribe to messages from the server
 
 ```js
-yomoclient.connection.on('connected', () => {
-    // Enter a room
+yomoclient.on('connected', () => {
+    // enter a room
     const verse = yomoclient.to('001');
 
     // converting events to observable sequences
@@ -60,8 +55,8 @@ yomoclient.connection.on('connected', () => {
 #### 4.Sending messages to the server
 
 ```js
-yomoclient.connection.on('connected', () => {
-    // Enter a room
+yomoclient.on('connected', () => {
+    // enter a room
     const verse = yomoclient.to('001');
 
     verse.emit('online', {
@@ -75,8 +70,8 @@ yomoclient.connection.on('connected', () => {
 #### 5.Close a connection to YoMo
 
 ```js
-yomoclient.connection.close();
-yomoclient.connection.on('closed', () => {
+yomoclient.close();
+yomoclient.on('closed', () => {
     console.log('Closed the connection to YoMo.');
 });
 ```

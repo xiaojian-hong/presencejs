@@ -8,10 +8,11 @@ import { WebSocketMessage, YoMoClientOption } from './type';
 export default class YoMoClient<T> extends Subject<T> {
     private url: string;
     private verseMap: Map<string, Verse>;
+
     private socket$: WebSocketSubject<WebSocketMessage> | undefined;
     private socketSubscription: Subscription | undefined;
 
-    // Reconnection stream
+    // reconnection stream
     private reconnectionObservable: Observable<number> | undefined;
     private reconnectionSubscription: Subscription | undefined;
     private reconnectInterval: number;
@@ -20,11 +21,6 @@ export default class YoMoClient<T> extends Subject<T> {
     private connectionStatus$: Subject<boolean>;
 
     private wasmLoaded: boolean;
-
-    public connection: {
-        on: (event: 'connected' | 'closed', cb: () => void) => void;
-        close: () => void;
-    };
 
     constructor(url: string, option: YoMoClientOption) {
         if (!isWSProtocol(getProtocol(url))) {
@@ -50,28 +46,38 @@ export default class YoMoClient<T> extends Subject<T> {
             },
         });
 
-        this.wasmLoaded = false;
-
         this.verseMap = new Map<string, Verse>();
 
-        this.connection = {
-            close: this.close.bind(this),
-            on: this.on.bind(this),
-        };
+        this.wasmLoaded = false;
 
         this.connect();
     }
 
+    /**
+     * enter a room
+     *
+     * @param verseId room id
+     *
+     * @return {Verse}
+     */
     to(verseId: string): Verse {
         const verse = this.verseMap.get(verseId);
         if (verse) {
             return verse;
         }
 
-        return this.createVerse(verseId, this.socket$);
+        return this.createVerse(verseId);
     }
 
-    private on(event: 'connected' | 'closed', cb: () => void): void {
+    /**
+     * function that handles 'connected' and 'closed' events
+     *
+     * @param event name of the event
+     * @param cb is the function executed when the events 'connected' and 'closed' occur
+     *
+     * @private
+     */
+    on(event: 'connected' | 'closed', cb: () => void): void {
         this.connectionStatus$
             .pipe(
                 distinctUntilChanged(),
@@ -88,26 +94,32 @@ export default class YoMoClient<T> extends Subject<T> {
     }
 
     /**
-     * Close subscriptions, clean up.
+     * close subscriptions, clean up.
      */
-    private close(): void {
+    close(): void {
         // call 'close', don't reconnect
         this.reconnectAttempts = 0;
+        this.clearReconnection();
         this.clearSocket();
         this.connectionStatus$.next(false);
     }
 
-    private createVerse(
-        verseId: string,
-        socket$: WebSocketSubject<WebSocketMessage> | undefined
-    ) {
-        const verse = new Verse(verseId, socket$);
+    /**
+     * create a room
+     *
+     * @param verseId room id
+     *
+     * @return {Verse}
+     */
+    private createVerse(verseId: string) {
+        const verse = new Verse(verseId, this.socket$);
         this.verseMap.set(verseId, verse);
         return verse;
     }
 
     /**
      * connect.
+     *
      * @private
      */
     private async connect() {
@@ -193,6 +205,7 @@ export default class YoMoClient<T> extends Subject<T> {
      * @private
      */
     private clearSocket(): void {
+        this.socket$?.complete();
         this.socketSubscription && this.socketSubscription.unsubscribe();
         this.socket$ = undefined;
     }
@@ -232,6 +245,8 @@ function getProtocol(url: string) {
 }
 
 /**
+ * load wasm
+ *
  * @param {RequestInfo} path wasm file path
  */
 async function loadWasm(path: RequestInfo): Promise<void> {
