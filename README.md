@@ -36,18 +36,15 @@ yomoclient.on('connected', () => {
 
 ```js
 yomoclient.on('connected', () => {
-    // enter a room
-    const verse = yomoclient.to('001');
+    // get a room
+    const verse = yomoclient.getVerse('001');
 
-    // converting events to observable sequences
-    const online$ = verse.fromEvent('online');
-    online$.subscribe(data => {
+    verse.fromServer('online').subscribe(data => {
         console.log('online:', data);
     });
 
-    // or use the 'on' function
-    verse.on('online', data => {
-        console.log('online:', data);
+    verse.fromServer('mousemove').subscribe(data => {
+        console.log('mousemove:', data);
     });
 });
 ```
@@ -55,15 +52,29 @@ yomoclient.on('connected', () => {
 #### 4.Sending messages to the server
 
 ```js
-yomoclient.on('connected', () => {
-    // enter a room
-    const verse = yomoclient.to('001');
+import { map, throttleTime } from 'rxjs/operators';
 
-    verse.emit('online', {
+yomoclient.on('connected', () => {
+    const verse = yomoclient.getVerse('001');
+
+    verse.publish('online', {
         id: 'ID',
         x: 10,
         y: 10,
     });
+
+    const mousemove$ = verse.fromEvent(document, 'mousemove').pipe(
+        throttleTime(200),
+        map(event => {
+            return {
+                id: 'ID',
+                x: event.clientX,
+                y: event.clientY,
+            };
+        })
+    );
+
+    verse.bindServer(mousemove$, 'mousemove');
 });
 ```
 

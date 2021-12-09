@@ -5,7 +5,7 @@ import Go from './wasm-exec';
 import Verse from './verse';
 import { WebSocketMessage, YoMoClientOption } from './type';
 
-export default class YoMoClient<T> extends Subject<T> {
+export default class YoMoClient extends Subject<WebSocketMessage> {
     private url: string;
     private verseMap: Map<string, Verse>;
 
@@ -30,6 +30,7 @@ export default class YoMoClient<T> extends Subject<T> {
         }
 
         super();
+
         this.url = url;
         this.reconnectInterval = option.reconnectInterval || 5000;
         this.reconnectAttempts = option.reconnectAttempts || 5;
@@ -54,13 +55,13 @@ export default class YoMoClient<T> extends Subject<T> {
     }
 
     /**
-     * enter a room
+     * get a room
      *
      * @param verseId room id
      *
      * @return {Verse}
      */
-    to(verseId: string): Verse {
+    getVerse(verseId: string): Verse {
         const verse = this.verseMap.get(verseId);
         if (verse) {
             return verse;
@@ -111,7 +112,7 @@ export default class YoMoClient<T> extends Subject<T> {
      *
      * @return {Verse}
      */
-    private createVerse(verseId: string) {
+    private createVerse(verseId: string): Verse {
         const verse = new Verse(verseId, this.socket$);
         this.verseMap.set(verseId, verse);
         return verse;
@@ -162,7 +163,7 @@ export default class YoMoClient<T> extends Subject<T> {
         });
 
         this.socketSubscription = this.socket$.subscribe({
-            next: (msg: any) => {
+            next: msg => {
                 this.next(msg);
             },
             error: () => {

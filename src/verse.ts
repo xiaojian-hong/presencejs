@@ -1,11 +1,11 @@
-import { Observable, fromEvent as rxFromEvent } from 'rxjs';
+import { Observable, fromEvent as rxFromEvent, Subscription } from 'rxjs';
 import { FromEventTarget } from 'rxjs/internal/observable/fromEvent';
 import { filter, map } from 'rxjs/operators';
 import { WebSocketSubject } from 'rxjs/webSocket';
 import { WebSocketMessage } from './type';
 
 export default class Verse {
-    verseId: string;
+    public verseId: string;
     private socket$: WebSocketSubject<WebSocketMessage> | undefined;
 
     constructor(
@@ -17,60 +17,54 @@ export default class Verse {
     }
 
     /**
-     * converting events to observable sequences
+     * handle events given from the server
      *
      * @param event name of the event
-     * @param target point to the DOM object that triggered the event
      *
      * @return {Observable<T>}
      */
-    fromEvent<T>(event: string, target?: FromEventTarget<T>): Observable<T> {
-        if (target) {
-            return rxFromEvent<T>(target, event);
+    fromServer<T>(event: string): Observable<T> {
+        if (!this.socket$) {
+            return new Observable<never>();
         }
 
-        if (this.socket$) {
-            return this.socket$.pipe(
-                filter((message: any): boolean => {
-                    return (
-                        message.verseId === this.verseId &&
-                        message.event &&
-                        message.event === event &&
-                        message.data
-                    );
-                }),
-                map(_ => _.data)
-            );
-        }
-
-        return new Observable<never>();
+        return this.socket$.pipe(
+            filter((message: any): boolean => {
+                return (
+                    message.verseId === this.verseId &&
+                    message.event &&
+                    message.event === event &&
+                    message.data
+                );
+            }),
+            map(_ => _.data)
+        );
     }
 
     /**
-     * function that handle events given from the server
+     * converting events to observable sequences
      *
+     * @param target point to the DOM object that triggered the event
      * @param event name of the event
-     * @param cb is the function executed if event matches the response from the server
+     *
+     * @return {Observable<T>}
      */
-    on(event: string, cb: (data?: any) => void): void {
-        if (this.socket$) {
-            this.socket$
-                .pipe(
-                    filter((message: any): boolean => {
-                        return (
-                            message.verseId === this.verseId &&
-                            message.event &&
-                            message.event === event &&
-                            message.data
-                        );
-                    })
-                )
-                .subscribe({
-                    next: (message: WebSocketMessage): void => cb(message.data),
-                    error: () => undefined,
-                    complete: (): void => {},
-                });
-        }
+    fromEvent<T>(target: FromEventTarget<T>, event: string): Observable<T> {
+        return rxFromEvent<T>(target, event);
+    }
+
+    /**
+     * binding event sources to the server
+     *
+     * @param source event sources
+     * @param event name of the event
+     *
+     * @return {Subscription}
+     */
+    bindServer<T>(source: Observable<T>, event: string): Subscription {
+        return source.subscribe(data => {
+            this.publish(event, data);
+        });
     }
 
     /**
@@ -79,7 +73,7 @@ export default class Verse {
      * @param event name of the event
      * @param data request data
      */
-    emit(event: string, data: object | string): void {
+    publish<T>(event: string, data: T) {
         if (this.socket$) {
             this.socket$.next({ event, data, verseId: this.verseId });
         }

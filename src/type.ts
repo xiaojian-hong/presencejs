@@ -1,7 +1,7 @@
 export type WebSocketMessage = {
     verseId: string;
     event: string;
-    data: string | object;
+    data: any;
 };
 
 export interface YoMoClientOption {
