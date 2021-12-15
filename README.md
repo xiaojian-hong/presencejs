@@ -1,6 +1,10 @@
+# @yomo/presencejs
+
+You can use @yomo/presencejs to integrate YoMo's real-time platform into your web applications.
+
 ### Quickstart Guide
 
-#### 1.Add the YoMo Client Library SDK
+#### 1.Add YoMo Browser Client Library SDK
 
 Using npm
 
@@ -18,13 +22,28 @@ For CDN, you can use [skypack](https://www.skypack.dev): [https://cdn.skypack.de
 
 #### 2.Connect to YoMo
 
+The client need to authenticate with YoMo to establish a realtime connection. The following code sample uses a demo YoMo's server(`wss://ws-dev.yomo.run`) and public Key to authenticate and print the message `Connected to YoMo!` when you’ve successfully connected.
+
 ```js
 import { YoMoClient } from '@yomo/presencejs';
 
 // create an instance.
-const yomoclient = new YoMoClient('ws://localhost:3000', {
-    reconnectInterval: 5000, // The reconnection interval value.
-    reconnectAttempts: 3, // The reconnection attempts value.
+const yomoclient = new YoMoClient('wss://ws-dev.yomo.run', {
+    // Authentication
+    auth: {
+        // Certification Type.
+        // Optional values：'publickey' or 'token'.
+        // 'token' is not yet supported.
+        type: 'publickey',
+        // The public key in your Allegro Mesh project.
+        publicKey: '',
+    },
+    // The reconnection interval value.
+    // The default value is 5000.
+    reconnectInterval: 5000,
+    // The reconnection attempts value.
+    // The default value is 3.
+    reconnectAttempts: 3,
 });
 
 yomoclient.on('connected', () => {
@@ -36,14 +55,15 @@ yomoclient.on('connected', () => {
 
 ```js
 yomoclient.on('connected', () => {
-    // get a room
-    const verse = yomoclient.getVerse('001');
+    // Get a room.
+    const room = yomoclient.getRoom('001');
 
-    verse.fromServer('online').subscribe(data => {
+    // Handle events from the server and subscribe to data frames
+    room.fromServer('online').subscribe(data => {
         console.log('online:', data);
     });
 
-    verse.fromServer('mousemove').subscribe(data => {
+    room.fromServer('mousemove').subscribe(data => {
         console.log('mousemove:', data);
     });
 });
@@ -55,30 +75,39 @@ yomoclient.on('connected', () => {
 import { map, throttleTime } from 'rxjs/operators';
 
 yomoclient.on('connected', () => {
-    const verse = yomoclient.getVerse('001');
+    const room = yomoclient.getRoom('001');
 
-    verse.publish('online', {
+    // Push data frames immediately.
+    room.publish('online', {
         id: 'ID',
         x: 10,
         y: 10,
     });
 
-    const mousemove$ = verse.fromEvent(document, 'mousemove').pipe(
-        throttleTime(200),
-        map(event => {
-            return {
-                id: 'ID',
-                x: event.clientX,
-                y: event.clientY,
-            };
-        })
-    );
+    // Converting browser events into observable sequences.
+    const mousemove$ = room
+        .fromEvent(document, 'mousemove')
+        // You can use RxJS Operators.
+        .pipe(
+            throttleTime(200),
+            map(event => {
+                return {
+                    id: 'ID',
+                    x: event.clientX,
+                    y: event.clientY,
+                };
+            })
+        );
 
-    verse.bindServer(mousemove$, 'mousemove');
+    // Bind the event source to YoMo's service,
+    // which will automatically push the data frame.
+    room.bindServer(mousemove$, 'mousemove');
 });
 ```
 
 #### 5.Close a connection to YoMo
+
+A connection to YoMo can be closed once it is no longer needed.
 
 ```js
 yomoclient.close();
@@ -87,7 +116,30 @@ yomoclient.on('closed', () => {
 });
 ```
 
-## LICENSE
+### Api
+
+#### YoMoClient
+
+| Methods of instance | Description                                                     | Type                                                                      |
+| ------------------- | --------------------------------------------------------------- | ------------------------------------------------------------------------- |
+| on                  | Subscribe to the connection and disconnection status            | <code>on(event: 'connected' &#124; 'closed', cb: () => void): void</code> |
+| close               | A connection to YoMo can be closed once it is no longer needed. | `close(): void`                                                           |
+| getRoom             | Get a room.                                                     | `getRoom(id: string): Room`                                               |
+
+#### Room
+
+| Methods of instance | Description                                                                            | Type                                                                     |
+| ------------------- | -------------------------------------------------------------------------------------- | ------------------------------------------------------------------------ |
+| fromServer          | Handle event from the server.                                                          | `fromServer<T>(event: string): Observable<T>`                            |
+| bindServer          | Bind the event source to YoMo's service, which will automatically push the data frame. | `bindServer<T>(source: Observable<T>, event: string): Subscription`      |
+| fromEvent           | Converting browser events into observable sequences. Same as RxJS.                     | `fromEvent<T>(target: FromEventTarget<T>, event: string): Observable<T>` |
+| publish             | Push data frames immediately.                                                          | `publish<T>(event: string, data: T)`                                     |
+
+### Examples
+
+[CursorChat](https://github.com/yomorun/yomo-react-cursor-chat)
+
+### LICENSE
 
 <a href="/LICENSE" target="_blank">
     <img alt="License: MIT" src="https://img.shields.io/badge/License-MIT-blue.svg" />

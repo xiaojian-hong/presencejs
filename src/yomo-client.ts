@@ -1,18 +1,22 @@
 import { interval, Observable, Subject, Subscription } from 'rxjs';
 import { distinctUntilChanged, filter, takeWhile } from 'rxjs/operators';
 import { WebSocketSubject } from 'rxjs/webSocket';
-import Go from './wasm-exec';
-import Verse from './verse';
+import {
+    getProtocol,
+    isWSProtocol,
+    updateQueryStringParameter,
+    loadWasm,
+} from './helper';
+import Room from './room';
 import { WebSocketMessage, YoMoClientOption } from './type';
 
 export default class YoMoClient extends Subject<WebSocketMessage> {
     private url: string;
-    private verseMap: Map<string, Verse>;
 
     private socket$: WebSocketSubject<WebSocketMessage> | undefined;
     private socketSubscription: Subscription | undefined;
 
-    // reconnection stream
+    // Reconnection stream
     private reconnectionObservable: Observable<number> | undefined;
     private reconnectionSubscription: Subscription | undefined;
     private reconnectInterval: number;
@@ -20,9 +24,11 @@ export default class YoMoClient extends Subject<WebSocketMessage> {
 
     private connectionStatus$: Subject<boolean>;
 
+    private roomMap: Map<string, Room>;
+
     private wasmLoaded: boolean;
 
-    constructor(url: string, option: YoMoClientOption) {
+    constructor(url: string, option?: YoMoClientOption) {
         if (!isWSProtocol(getProtocol(url))) {
             throw new Error(
                 `${url} -> The URL's scheme must be either 'ws' or 'wss'`
@@ -31,9 +37,23 @@ export default class YoMoClient extends Subject<WebSocketMessage> {
 
         super();
 
-        this.url = url;
-        this.reconnectInterval = option.reconnectInterval || 5000;
-        this.reconnectAttempts = option.reconnectAttempts || 5;
+        this.url =
+            option?.auth?.type === 'publickey'
+                ? updateQueryStringParameter(
+                      url,
+                      'public_key',
+                      option.auth.publicKey
+                  )
+                : url;
+
+        this.reconnectInterval = option?.reconnectInterval
+            ? option.reconnectInterval
+            : 5000;
+
+        this.reconnectAttempts = option?.reconnectAttempts
+            ? option.reconnectAttempts
+            : 3;
+
         this.connectionStatus$ = new Subject<boolean>();
         this.connectionStatus$.subscribe({
             next: isConnected => {
@@ -47,7 +67,7 @@ export default class YoMoClient extends Subject<WebSocketMessage> {
             },
         });
 
-        this.verseMap = new Map<string, Verse>();
+        this.roomMap = new Map<string, Room>();
 
         this.wasmLoaded = false;
 
@@ -55,23 +75,23 @@ export default class YoMoClient extends Subject<WebSocketMessage> {
     }
 
     /**
-     * get a room
+     * Get a room
      *
-     * @param verseId room id
+     * @param id room id
      *
-     * @return {Verse}
+     * @return {Room}
      */
-    getVerse(verseId: string): Verse {
-        const verse = this.verseMap.get(verseId);
-        if (verse) {
-            return verse;
+    getRoom(id: string): Room {
+        const room = this.roomMap.get(id);
+        if (room) {
+            return room;
         }
 
-        return this.createVerse(verseId);
+        return this.createRoom(id);
     }
 
     /**
-     * function that handles 'connected' and 'closed' events
+     * Function that handles 'connected' and 'closed' events
      *
      * @param event name of the event
      * @param cb is the function executed when the events 'connected' and 'closed' occur
@@ -95,7 +115,7 @@ export default class YoMoClient extends Subject<WebSocketMessage> {
     }
 
     /**
-     * close subscriptions, clean up.
+     * Close subscriptions, clean up.
      */
     close(): void {
         // call 'close', don't reconnect
@@ -106,20 +126,20 @@ export default class YoMoClient extends Subject<WebSocketMessage> {
     }
 
     /**
-     * create a room
+     * Create a room
      *
-     * @param verseId room id
+     * @param id room id
      *
-     * @return {Verse}
+     * @return {Room}
      */
-    private createVerse(verseId: string): Verse {
-        const verse = new Verse(verseId, this.socket$);
-        this.verseMap.set(verseId, verse);
-        return verse;
+    private createRoom(id: string): Room {
+        const room = new Room(id, this.socket$);
+        this.roomMap.set(id, room);
+        return room;
     }
 
     /**
-     * connect.
+     * Connect to YoMo
      *
      * @private
      */
@@ -176,7 +196,7 @@ export default class YoMoClient extends Subject<WebSocketMessage> {
     }
 
     /**
-     * reconnect.
+     * Reconnect.
      *
      * @private
      */
@@ -201,7 +221,7 @@ export default class YoMoClient extends Subject<WebSocketMessage> {
     }
 
     /**
-     * clear socket.
+     * Clear socket.
      *
      * @private
      */
@@ -212,7 +232,7 @@ export default class YoMoClient extends Subject<WebSocketMessage> {
     }
 
     /**
-     * clear reconnect.
+     * Clear reconnect.
      *
      * @private
      */
@@ -220,57 +240,5 @@ export default class YoMoClient extends Subject<WebSocketMessage> {
         this.reconnectionSubscription &&
             this.reconnectionSubscription.unsubscribe();
         this.reconnectionObservable = undefined;
-    }
-}
-
-/**
- * check if the URL scheme is 'ws' or 'wss'
- *
- * @param protocol - URL's scheme
- */
-function isWSProtocol(protocol: string): boolean {
-    return protocol === 'ws' || protocol === 'wss';
-}
-
-/**
- * get URL's scheme
- *
- * @param url - the url of the socket server to connect to
- */
-function getProtocol(url: string) {
-    if (!url) {
-        return '';
-    }
-
-    return url.split(':')[0];
-}
-
-/**
- * load wasm
- *
- * @param {RequestInfo} path wasm file path
- */
-async function loadWasm(path: RequestInfo): Promise<void> {
-    // This is a polyfill for FireFox and Safari
-    if (!WebAssembly.instantiateStreaming) {
-        WebAssembly.instantiateStreaming = async (resp, importObject) => {
-            const source = await (await resp).arrayBuffer();
-            return await WebAssembly.instantiate(source, importObject);
-        };
-    }
-
-    const go = new Go();
-
-    go.importObject.env['syscall/js.finalizeRef'] = () => {};
-
-    try {
-        const result = await WebAssembly.instantiateStreaming(
-            fetch(path),
-            go.importObject
-        );
-
-        go.run(result.instance);
-    } catch (error) {
-        return Promise.reject(error);
     }
 }

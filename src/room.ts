@@ -1,23 +1,23 @@
-import { Observable, fromEvent as rxFromEvent, Subscription } from 'rxjs';
+import { Observable, Subscription, fromEvent as rxFromEvent } from 'rxjs';
 import { FromEventTarget } from 'rxjs/internal/observable/fromEvent';
 import { filter, map } from 'rxjs/operators';
 import { WebSocketSubject } from 'rxjs/webSocket';
 import { WebSocketMessage } from './type';
 
-export default class Verse {
-    public verseId: string;
+export default class Room {
+    public id: string;
     private socket$: WebSocketSubject<WebSocketMessage> | undefined;
 
     constructor(
-        verseId: string,
+        id: string,
         socket$: WebSocketSubject<WebSocketMessage> | undefined
     ) {
-        this.verseId = verseId;
+        this.id = id;
         this.socket$ = socket$;
     }
 
     /**
-     * handle events given from the server
+     *  Handle event from the server.
      *
      * @param event name of the event
      *
@@ -31,7 +31,7 @@ export default class Verse {
         return this.socket$.pipe(
             filter((message: any): boolean => {
                 return (
-                    message.verseId === this.verseId &&
+                    message.roomId === this.id &&
                     message.event &&
                     message.event === event &&
                     message.data
@@ -42,7 +42,7 @@ export default class Verse {
     }
 
     /**
-     * converting events to observable sequences
+     * Converting browser events into observable sequences.
      *
      * @param target point to the DOM object that triggered the event
      * @param event name of the event
@@ -54,7 +54,7 @@ export default class Verse {
     }
 
     /**
-     * binding event sources to the server
+     * Bind the event source to YoMo's service, which will automatically push the data frame.
      *
      * @param source event sources
      * @param event name of the event
@@ -68,14 +68,14 @@ export default class Verse {
     }
 
     /**
-     * function for sending data to the server
+     * Push data frames immediately.
      *
      * @param event name of the event
      * @param data request data
      */
     publish<T>(event: string, data: T) {
         if (this.socket$) {
-            this.socket$.next({ event, data, verseId: this.verseId });
+            this.socket$.next({ event, data, roomId: this.id });
         }
     }
 }
