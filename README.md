@@ -5,21 +5,21 @@
 Using npm
 
 ```
-$ npm i --save yomo-js
+$ npm i --save @yomo/presencejs
 ```
 
-For CDN, you can use [skypack](https://www.skypack.dev): [https://cdn.skypack.dev/yomo-js](https://cdn.skypack.dev/yomo-js)
+For CDN, you can use [skypack](https://www.skypack.dev): [https://cdn.skypack.dev/@yomo/presencejs](https://cdn.skypack.dev/@yomo/presencejs)
 
 ```html
 <script type="module">
-    import { YoMoClient } from 'https://cdn.skypack.dev/yomo-js';
+    import { YoMoClient } from 'https://cdn.skypack.dev/@yomo/presencejs';
 </script>
 ```
 
 #### 2.Connect to YoMo
 
 ```js
-import { YoMoClient } from 'yomo-js';
+import { YoMoClient } from '@yomo/presencejs';
 
 // create an instance.
 const yomoclient = new YoMoClient('ws://localhost:3000', {

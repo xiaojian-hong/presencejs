@@ -1,9 +1,11 @@
 {
-  "version": "0.1.5",
+  "version": "0.0.2",
   "description": "YoMo browser sdk",
   "keywords": [
-    "yomo-js",
-    "YoMo"
+    "yomo",
+    "realtime",
+    "presencejs",
+    "metaverse"
   ],
   "license": "MIT",
   "main": "dist/index.js",
@@ -38,9 +40,9 @@
     "singleQuote": true,
     "trailingComma": "es5"
   },
-  "name": "yomo-js",
+  "name": "@yomo/presencejs",
   "author": "osdodo",
-  "module": "dist/yomo-js.esm.js",
+  "module": "dist/presencejs.esm.js",
   "devDependencies": {
     "@types/node-fetch": "^2.5.12",
     "husky": "^7.0.4",
@@ -54,10 +56,10 @@
   },
   "repository": {
     "type": "git",
-    "url": "git+https://github.com/yomorun/yomo-js.git"
+    "url": "git+https://github.com/yomorun/presencejs.git"
   },
   "bugs": {
-    "url": "https://github.com/yomorun/yomo-js/issues"
+    "url": "https://github.com/yomorun/presencejs/issues"
   },
-  "homepage": "https://github.com/yomorun/yomo-js#readme"
+  "homepage": "https://github.com/yomorun/presencejs#readme"
 }
