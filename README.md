@@ -1,4 +1,4 @@
-# @yomo/presencejs
+# @yomo/presencejs⚡️
 
 You can use @yomo/presencejs to integrate YoMo's real-time platform into your web applications.
 
@@ -12,30 +12,42 @@ Using npm
 $ npm i --save @yomo/presencejs
 ```
 
+Using yarn
+
+```
+$ yarn add @yomo/presencejs
+```
+
+Using pnpm
+
+```
+$ pnpm i @yomo/presencejs
+```
+
 For CDN, you can use [skypack](https://www.skypack.dev): [https://cdn.skypack.dev/@yomo/presencejs](https://cdn.skypack.dev/@yomo/presencejs)
 
 ```html
 <script type="module">
-    import { YoMoClient } from 'https://cdn.skypack.dev/@yomo/presencejs';
+    import { YomoPresence } from 'https://cdn.skypack.dev/@yomo/presencejs';
 </script>
 ```
 
-#### 2.Connect to YoMo
+#### 2.Connect to YoMo Edge Serverless
 
 The client need to authenticate with YoMo to establish a realtime connection. The following code sample uses a demo YoMo's server(`wss://ws-dev.yomo.run`) and public Key to authenticate and print the message `Connected to YoMo!` when you’ve successfully connected.
 
 ```js
-import { YoMoClient } from '@yomo/presencejs';
+import { YomoPresence } from '@yomo/presencejs';
 
 // create an instance.
-const yomoclient = new YoMoClient('wss://ws-dev.yomo.run', {
+const yomo = new YomoPresence('wss://presencejs.yomo.dev', {
     // Authentication
     auth: {
         // Certification Type.
         // Optional values：'publickey' or 'token'.
         // 'token' is not yet supported.
         type: 'publickey',
-        // The public key in your Allegro Mesh project.
+        // The public key in your YoMo edge serverless project.
         publicKey: '',
     },
     // The reconnection interval value.
@@ -46,7 +58,7 @@ const yomoclient = new YoMoClient('wss://ws-dev.yomo.run', {
     reconnectAttempts: 3,
 });
 
-yomoclient.on('connected', () => {
+yomo.on('connected', () => {
     console.log('Connected to YoMo');
 });
 ```
@@ -54,9 +66,9 @@ yomoclient.on('connected', () => {
 #### 3.Subscribe to messages from the server
 
 ```js
-yomoclient.on('connected', () => {
+yomo.on('connected', () => {
     // Get a room.
-    const room = yomoclient.getRoom('001');
+    const room = conn.getRoom('001');
 
     // Handle events from the server and subscribe to data frames
     room.fromServer('online').subscribe(data => {
@@ -74,12 +86,12 @@ yomoclient.on('connected', () => {
 ```js
 import { map, throttleTime } from 'rxjs/operators';
 
-yomoclient.on('connected', () => {
+yomo.on('connected', () => {
     const room = yomoclient.getRoom('001');
 
     // Push data frames immediately.
     room.publish('online', {
-        id: 'ID',
+        id: 'ID', // TODO: Won't need, because the connection can aware this.
         x: 10,
         y: 10,
     });
@@ -89,7 +101,7 @@ yomoclient.on('connected', () => {
         .fromEvent(document, 'mousemove')
         // You can use RxJS Operators.
         .pipe(
-            throttleTime(200),
+            throttleTime(16),
             map(event => {
                 return {
                     id: 'ID',
@@ -110,15 +122,15 @@ yomoclient.on('connected', () => {
 A connection to YoMo can be closed once it is no longer needed.
 
 ```js
-yomoclient.close();
-yomoclient.on('closed', () => {
-    console.log('Closed the connection to YoMo.');
+yomo.close();
+yomo.on('closed', () => {
+    console.log('Closed the connection to YoMo serverless.');
 });
 ```
 
-### Api
+### API
 
-#### YoMoClient
+#### YoMo
 
 | Methods of instance | Description                                                     | Type                                                                      |
 | ------------------- | --------------------------------------------------------------- | ------------------------------------------------------------------------- |
