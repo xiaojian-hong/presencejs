@@ -1,5 +1,5 @@
 export type WebSocketMessage = {
-    roomId: string;
+    roomId?: string;
     event: string;
     data: any;
 };

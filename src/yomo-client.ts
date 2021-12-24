@@ -28,6 +28,8 @@ export default class YoMoClient extends Subject<WebSocketMessage> {
 
     private wasmLoaded: boolean;
 
+    private heartTimer: Subscription | undefined;
+
     constructor(url: string, option?: YoMoClientOption) {
         if (!isWSProtocol(getProtocol(url))) {
             throw new Error(
@@ -72,6 +74,12 @@ export default class YoMoClient extends Subject<WebSocketMessage> {
         this.wasmLoaded = false;
 
         this.connect();
+
+        this.heartTimer = interval(30000).subscribe(_ => {
+            if (this.socket$) {
+                this.socket$.next({ event: 'HEARTBEAT', data: 1 });
+            }
+        });
     }
 
     /**
@@ -118,7 +126,10 @@ export default class YoMoClient extends Subject<WebSocketMessage> {
      * Close subscriptions, clean up.
      */
     close(): void {
-        // call 'close', don't reconnect
+        if (this.heartTimer) {
+            this.heartTimer.unsubscribe();
+            this.heartTimer = undefined;
+        }
         this.reconnectAttempts = 0;
         this.clearReconnection();
         this.clearSocket();
