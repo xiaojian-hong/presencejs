@@ -28,19 +28,34 @@ For CDN, you can use [skypack](https://www.skypack.dev): [https://cdn.skypack.de
 
 ```html
 <script type="module">
-    import { yomo } from 'https://cdn.skypack.dev/@yomo/presencejs';
+    import { Presence } from 'https://cdn.skypack.dev/@yomo/presencejs';
 </script>
 ```
 
 ### 2. Connect to presence server
 
-The client need to authenticate with YoMo to establish a realtime connection. The following code sample uses a demo YoMo's server(`wss://ws-dev.yomo.run`) and public Key to authenticate and print the message `Connected to YoMo!` when you’ve successfully connected.
+The client need to authenticate with YoMo to establish a realtime connection. The following code sample uses a demo YoMo's server(`wss://x.yomo.dev/presence`) and public Key to authenticate and print the message `Connected to YoMo!` when you’ve successfully connected.
 
 ```js
 import { Presence } from '@yomo/presencejs';
 
+interface PresenceOption {
+    // Authentication
+    auth?: {
+        // Certification Type
+        type: 'publickey' | 'token';
+        // The public key in your Allegro Mesh project.
+        publicKey: string;
+    };
+    // The reconnection interval value.
+    reconnectInterval?: number;
+    // The reconnection attempts value.
+    reconnectAttempts?: number;
+}
+
 // create an instance.
-const yomo = new Presence('wss://ws-dev.yomo.run');
+// new Presence(host: string, option?: PresenceOption | undefined): Presence
+const yomo = new Presence('wss://x.yomo.dev/presence');
 
 yomo.on('connected', () => {
     console.log('Connected to server: ', yomo.host);
@@ -51,15 +66,16 @@ yomo.on('connected', () => {
 
 ```js
 yomo.on('connected', () => {
-    // Get a room instance
-    const room = yomo.getRoom('001');
+    // Enter a room
+    yomo.toRoom('001');
 
-    // Handle events from the server and subscribe to data frames
-    room.fromServer('online').subscribe((data) => {
+    // Function to handle response for given event from server
+    yomo.on('online', data => {
         console.log('online:', data);
     });
 
-    room.fromServer('mousemove').subscribe((data) => {
+    // Same as the `on` method, returns an observable response
+    yomo.on$('mousemove').subscribe(data => {
         console.log('mousemove:', data);
     });
 });
@@ -68,36 +84,28 @@ yomo.on('connected', () => {
 ### 4. Sending messages to the server
 
 ```js
-import { map, throttleTime } from 'rxjs/operators';
+import { fromEvent } from 'rxjs';
+import { map } from 'rxjs/operators';
 
 yomo.on('connected', () => {
-    const room = yomo.getRoom('001');
-
-    // Push data frames immediately.
-    room.publish('online', {
-        id: 'ID',
+    // Function for sending data to the server
+    yomo.send('online', {
         x: 10,
         y: 10,
     });
 
     // Converting browser events into observable sequences.
-    const mousemove$ = room
-        .fromEvent(document, 'mousemove')
-        // You can use RxJS Operators.
-        .pipe(
-            throttleTime(200),
-            map((event) => {
-                return {
-                    id: 'ID',
-                    x: event.clientX,
-                    y: event.clientY,
-                };
-            })
-        );
+    const mousemove$ = fromEvent(document, 'mousemove').pipe(
+        map(event => {
+            return {
+                x: event.clientX,
+                y: event.clientY,
+            };
+        })
+    );
 
-    // Bind the event source to YoMo's service,
-    // which will automatically push the data frame.
-    room.bindServer(mousemove$, 'mousemove');
+    // Sending data streams to the server
+    mousemove$.subscribe(yomo.ofRoom('001', 'movement'));
 });
 ```
 
@@ -116,24 +124,18 @@ yomo.on('closed', () => {
 
 ### Presence instance
 
-| Methods of instance | Description                                                     | Type                                                                      |
-| ------------------- | --------------------------------------------------------------- | ------------------------------------------------------------------------- |
-| on                  | Subscribe to the connection and disconnection status            | <code>on(event: 'connected' &#124; 'closed', cb: () => void): void</code> |
-| close               | A connection to YoMo can be closed once it is no longer needed. | `close(): void`                                                           |
-| getRoom             | Get a room.                                                     | `getRoom(id: string): Room`                                               |
-
-### Room
-
-| Methods of instance | Description                                                                            | Type                                                                     |
-| ------------------- | -------------------------------------------------------------------------------------- | ------------------------------------------------------------------------ |
-| fromServer          | Handle event from the server.                                                          | `fromServer<T>(event: string): Observable<T>`                            |
-| bindServer          | Bind the event source to YoMo's service, which will automatically push the data frame. | `bindServer<T>(source: Observable<T>, event: string): Subscription`      |
-| fromEvent           | Converting browser events into observable sequences. Same as RxJS.                     | `fromEvent<T>(target: FromEventTarget<T>, event: string): Observable<T>` |
-| publish             | Push data frames immediately.                                                          | `publish<T>(event: string, data: T)`                                     |
+| Methods of instance | Description                                                     | Type                                                |
+| ------------------- | --------------------------------------------------------------- | --------------------------------------------------- |
+| `on`                | Function to handle response for given event from server         | `on<T>(event: string, cb: (data: T) => void): void` |
+| `on$`               | Same as the `on` method, returns an observable response         | `on$<T>(event: string): Observable<T>`              |
+| `send`              | Function for sending data to the server                         | `send<T>(event: string, data: T)`                   |
+| `toRoom`            | Enter a room                                                    | `toRoom(roomName: string): Presence`                |
+| `ofRoom`            | Function for sending data streams to the server                 | `ofRoom(roomName: string, event: string)`           |
+| `close`             | A connection to YoMo can be closed once it is no longer needed. | `close(): void`                                     |
 
 ## Examples
 
-[CursorChat](https://github.com/yomorun/yomo-react-cursor-chat)
+[CursorChat](https://github.com/osdodo/cursor-chat)
 
 ## LICENSE
 

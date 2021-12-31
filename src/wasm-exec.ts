@@ -9,8 +9,6 @@ if (typeof global !== 'undefined') {
     // global already exists
 } else if (typeof window !== 'undefined') {
     window.global = window;
-} else if (typeof self !== 'undefined') {
-    self.global = self;
 } else {
     throw new Error(
         'cannot export Go (neither global, window nor self is defined)'
@@ -151,7 +149,7 @@ export default class Go {
                 // https://github.com/WebAssembly/WASI/blob/main/phases/snapshot/docs.md#fd_write
                 fd_write: function(fd, iovs_ptr, iovs_len, nwritten_ptr) {
                     let nwritten = 0;
-                    if (fd == 1) {
+                    if (fd === 1) {
                         for (let iovs_i = 0; iovs_i < iovs_len; iovs_i++) {
                             let iov_ptr = iovs_ptr + iovs_i * 8; // assuming wasm32
                             let ptr = mem().getUint32(iov_ptr + 0, true);
@@ -159,10 +157,10 @@ export default class Go {
                             nwritten += len;
                             for (let i = 0; i < len; i++) {
                                 let c = mem().getUint8(ptr + i);
-                                if (c == 13) {
+                                if (c === 13) {
                                     // CR
                                     // ignore
-                                } else if (c == 10) {
+                                } else if (c === 10) {
                                     // LF
                                     // write line
                                     // let line = decoder.decode(
@@ -426,7 +424,7 @@ export default class Go {
         this._idPool = []; // unused ids that have been garbage collected
         this.exited = false; // whether the Go program has exited
 
-        const mem = new DataView(this._inst.exports.memory.buffer);
+        new DataView(this._inst.exports.memory.buffer);
 
         while (true) {
             const callbackPromise = new Promise(resolve => {

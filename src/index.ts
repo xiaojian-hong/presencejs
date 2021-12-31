@@ -1,3 +1,3 @@
-import YoMoClient from './yomo-client';
+import Presence from './presence';
 
-export { YoMoClient };
+export { Presence };

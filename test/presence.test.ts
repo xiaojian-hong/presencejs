@@ -1,15 +1,15 @@
 import fetch from 'node-fetch';
-import { YoMoClient } from '../src';
+import { Presence } from '../src';
 
 // @ts-ignore
 globalThis.fetch = fetch;
 
-describe('YoMoClient', () => {
+describe('Presence', () => {
     const ID = 'TestID';
 
-    it('Testing yomoclient.connectionStatus, yomoClient.emit and yomoClient.on', async () => {
-        const socketURL = 'wss://ws-dev.yomo.run';
-        const yomoclient = new YoMoClient(`${socketURL}`, {
+    it('Testing', async () => {
+        const socketURL = 'wss://x.yomo.dev/presence';
+        const yomo = new Presence(`${socketURL}`, {
             auth: {
                 // Certification Type.
                 // Optional values：'publickey' or 'token'.
@@ -22,14 +22,14 @@ describe('YoMoClient', () => {
 
         let onlineData: any;
 
-        yomoclient.on('connected', () => {
-            const room = yomoclient.getRoom('001');
+        yomo.on('connected', () => {
+            yomo.toRoom('001');
 
-            room.fromServer('online').subscribe(data => {
+            yomo.on$('online').subscribe(data => {
                 onlineData = data;
             });
 
-            room.publish('online', {
+            yomo.send('online', {
                 id: ID,
                 x: 10,
                 y: 30,

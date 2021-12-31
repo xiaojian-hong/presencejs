@@ -1,5 +1,5 @@
 import { interval, Observable, Subject, Subscription } from 'rxjs';
-import { distinctUntilChanged, filter, takeWhile } from 'rxjs/operators';
+import { distinctUntilChanged, filter, map, takeWhile } from 'rxjs/operators';
 import { WebSocketSubject } from 'rxjs/webSocket';
 import {
     getProtocol,
@@ -7,11 +7,10 @@ import {
     updateQueryStringParameter,
     loadWasm,
 } from './helper';
-import Room from './room';
-import { WebSocketMessage, YoMoClientOption } from './type';
+import { WebSocketMessage, PresenceOption } from './type';
 
-export default class YoMoClient extends Subject<WebSocketMessage> {
-    private url: string;
+export default class Presence extends Subject<WebSocketMessage> {
+    public host: string;
 
     private socket$: WebSocketSubject<WebSocketMessage> | undefined;
     private socketSubscription: Subscription | undefined;
@@ -24,29 +23,27 @@ export default class YoMoClient extends Subject<WebSocketMessage> {
 
     private connectionStatus$: Subject<boolean>;
 
-    private roomMap: Map<string, Room>;
-
     private wasmLoaded: boolean;
 
     private heartTimer: Subscription | undefined;
 
-    constructor(url: string, option?: YoMoClientOption) {
-        if (!isWSProtocol(getProtocol(url))) {
+    constructor(host: string, option?: PresenceOption) {
+        if (!isWSProtocol(getProtocol(host))) {
             throw new Error(
-                `${url} -> The URL's scheme must be either 'ws' or 'wss'`
+                `${host} -> The URL's scheme must be either 'ws' or 'wss'`
             );
         }
 
         super();
 
-        this.url =
+        this.host =
             option?.auth?.type === 'publickey'
                 ? updateQueryStringParameter(
-                      url,
+                      host,
                       'public_key',
                       option.auth.publicKey
                   )
-                : url;
+                : host;
 
         this.reconnectInterval = option?.reconnectInterval
             ? option.reconnectInterval
@@ -64,16 +61,14 @@ export default class YoMoClient extends Subject<WebSocketMessage> {
                     typeof isConnected === 'boolean' &&
                     !isConnected
                 ) {
-                    this.reconnect();
+                    this._reconnect();
                 }
             },
         });
 
-        this.roomMap = new Map<string, Room>();
-
         this.wasmLoaded = false;
 
-        this.connect();
+        this._connect();
 
         this.heartTimer = interval(30000).subscribe(_ => {
             if (this.socket$) {
@@ -83,47 +78,100 @@ export default class YoMoClient extends Subject<WebSocketMessage> {
     }
 
     /**
-     * Get a room
-     *
-     * @param id room id
-     *
-     * @return {Room}
-     */
-    getRoom(id: string): Room {
-        const room = this.roomMap.get(id);
-        if (room) {
-            return room;
-        }
-
-        return this.createRoom(id);
-    }
-
-    /**
-     * Function that handles 'connected' and 'closed' events
+     * Function to handle response for given event from server
      *
      * @param event name of the event
      * @param cb is the function executed when the events 'connected' and 'closed' occur
      *
      * @private
      */
-    on(event: 'connected' | 'closed', cb: () => void): void {
-        this.connectionStatus$
-            .pipe(
-                distinctUntilChanged(),
-                filter(isConnected => {
+    on<T>(event: string, cb: (data: T) => void): void {
+        if (event === 'connected' || event === 'closed') {
+            this.connectionStatus$
+                .pipe(
+                    distinctUntilChanged(),
+                    filter(isConnected => {
+                        return (
+                            (isConnected && event === 'connected') ||
+                            (!isConnected && event === 'closed')
+                        );
+                    })
+                )
+                .subscribe((isConnected: any) => {
+                    cb(isConnected);
+                });
+        } else {
+            this.pipe(
+                filter((message: any): boolean => {
                     return (
-                        (isConnected && event === 'connected') ||
-                        (!isConnected && event === 'closed')
+                        message.event && message.event === event && message.data
                     );
                 })
-            )
-            .subscribe(() => {
-                cb && cb();
+            ).subscribe({
+                next: (message: WebSocketMessage): void => cb(message.data),
+                error: () => undefined,
+                complete: (): void => {},
             });
+        }
     }
 
     /**
-     * Close subscriptions, clean up.
+     * Same as the `on` method, returns an observable response
+     *
+     * @param event name of the event
+     *
+     * @return {Observable<T>}
+     */
+    on$<T>(event: string): Observable<T> {
+        return this.pipe(
+            filter((message: any): boolean => {
+                return message.event && message.event === event && message.data;
+            }),
+            map(_ => _.data)
+        );
+    }
+
+    /**
+     * Function for sending data to the server
+     *
+     * @param event name of the event
+     * @param data
+     */
+    send<T>(event: string, data: T) {
+        if (this.socket$) {
+            this.socket$.next({ event, data });
+        }
+    }
+
+    /**
+     * Enter a room
+     *
+     * @param roomName name of the room
+     *
+     * @return {Presence}
+     */
+    toRoom(roomName: string): Presence {
+        this.send('TOROOM', roomName);
+        return this;
+    }
+
+    /**
+     * Function for sending data streams to the server
+     *
+     * @param roomName name of the room
+     * @param event name of the event
+     *
+     * @return (data: any) => void
+     */
+    ofRoom(roomName: string, event: string) {
+        this.toRoom(roomName);
+        return (data: any) => {
+            this.send(event, data);
+        };
+    }
+
+    /**
+     * Close subscriptions, clean up
      */
     close(): void {
         if (this.heartTimer) {
@@ -131,22 +179,9 @@ export default class YoMoClient extends Subject<WebSocketMessage> {
             this.heartTimer = undefined;
         }
         this.reconnectAttempts = 0;
-        this.clearReconnection();
-        this.clearSocket();
+        this._clearReconnection();
+        this._clearSocket();
         this.connectionStatus$.next(false);
-    }
-
-    /**
-     * Create a room
-     *
-     * @param id room id
-     *
-     * @return {Room}
-     */
-    private createRoom(id: string): Room {
-        const room = new Room(id, this.socket$);
-        this.roomMap.set(id, room);
-        return room;
     }
 
     /**
@@ -154,7 +189,7 @@ export default class YoMoClient extends Subject<WebSocketMessage> {
      *
      * @private
      */
-    private async connect() {
+    private async _connect() {
         if (!this.wasmLoaded) {
             try {
                 await loadWasm('https://d1lxb757x1h2rw.cloudfront.net/y3.wasm');
@@ -176,7 +211,7 @@ export default class YoMoClient extends Subject<WebSocketMessage> {
         };
 
         this.socket$ = new WebSocketSubject({
-            url: this.url,
+            url: this.host,
             serializer,
             deserializer,
             binaryType: 'arraybuffer',
@@ -187,7 +222,7 @@ export default class YoMoClient extends Subject<WebSocketMessage> {
             },
             closeObserver: {
                 next: () => {
-                    this.clearSocket();
+                    this._clearSocket();
                     this.connectionStatus$.next(false);
                 },
             },
@@ -199,19 +234,19 @@ export default class YoMoClient extends Subject<WebSocketMessage> {
             },
             error: () => {
                 if (!this.socket$) {
-                    this.clearReconnection();
-                    this.reconnect();
+                    this._clearReconnection();
+                    this._reconnect();
                 }
             },
         });
     }
 
     /**
-     * Reconnect.
+     * Reconnect
      *
      * @private
      */
-    private reconnect(): void {
+    private _reconnect(): void {
         this.reconnectionObservable = interval(this.reconnectInterval).pipe(
             takeWhile(
                 (_, index) => index < this.reconnectAttempts && !this.socket$
@@ -219,10 +254,10 @@ export default class YoMoClient extends Subject<WebSocketMessage> {
         );
 
         this.reconnectionSubscription = this.reconnectionObservable.subscribe({
-            next: () => this.connect(),
+            next: () => this._connect(),
             error: () => undefined,
             complete: () => {
-                this.clearReconnection();
+                this._clearReconnection();
                 if (!this.socket$) {
                     this.complete();
                     this.connectionStatus$.complete();
@@ -232,22 +267,22 @@ export default class YoMoClient extends Subject<WebSocketMessage> {
     }
 
     /**
-     * Clear socket.
+     * Clear socket
      *
      * @private
      */
-    private clearSocket(): void {
+    private _clearSocket(): void {
         this.socket$?.complete();
         this.socketSubscription && this.socketSubscription.unsubscribe();
         this.socket$ = undefined;
     }
 
     /**
-     * Clear reconnect.
+     * Clear reconnect
      *
      * @private
      */
-    private clearReconnection(): void {
+    private _clearReconnection(): void {
         this.reconnectionSubscription &&
             this.reconnectionSubscription.unsubscribe();
         this.reconnectionObservable = undefined;

@@ -1,10 +1,9 @@
 export type WebSocketMessage = {
-    roomId?: string;
     event: string;
     data: any;
 };
 
-export interface YoMoClientOption {
+export interface PresenceOption {
     // Authentication
     auth?: {
         // Certification Type
