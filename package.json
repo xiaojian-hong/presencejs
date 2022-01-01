@@ -41,7 +41,7 @@
     "trailingComma": "es5"
   },
   "name": "@yomo/presencejs",
-  "author": "osdodo",
+  "author": "YoMo",
   "module": "dist/presencejs.esm.js",
   "devDependencies": {
     "@types/node-fetch": "^2.5.12",
