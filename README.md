@@ -213,7 +213,10 @@ yomo.on('closed', () => {
 
 ## Examples
 
-[CursorChat](https://github.com/osdodo/cursor-chat)
+- React Cursor Chat Component: [Online Preview](https://cursor-chat-example.vercel.app)
+  - https://github.com/yomorun/react-cursor-chat
+- Next.js Commerce with realtime collaboration: [Online Preview](https://commerce-ochre-sigma-86.vercel.app/)
+  - https://github.com/osdodo/commerce
 
 ## License
 
