@@ -65,7 +65,7 @@ For CDN, you can use [skypack](https://www.skypack.dev): [https://cdn.skypack.de
 
 ### 2. Connect to presence server
 
-The client need to authenticate with YoMo to establish a realtime connection. The following code sample uses a demo YoMo's server(`wss://presence.yomo.dev`) and public Key to authenticate and print the message `Connected to YoMo!` when you’ve successfully connected.
+The client need to authenticate with YoMo to establish a realtime connection. The following code sample uses a demo YoMo's server(`wss://presencejs.yomo.dev`) and public Key to authenticate and print the message `Connected to YoMo!` when you’ve successfully connected.
 
 #### How do I get a token?
 
