@@ -1,11 +1,12 @@
 import Go from './wasm-exec';
+import { IPresenceOption } from './type';
+
+const y3WasmPath = 'https://d1lxb757x1h2rw.cloudfront.net/y3.wasm';
 
 /**
- * load wasm
- *
- * @param {RequestInfo} path wasm file path
+ * Load wasm
  */
-export async function loadWasm(path: RequestInfo): Promise<void> {
+export async function loadWasm(): Promise<void> {
     // This is a polyfill for FireFox and Safari
     if (!WebAssembly.instantiateStreaming) {
         WebAssembly.instantiateStreaming = async (resp, importObject) => {
@@ -20,7 +21,7 @@ export async function loadWasm(path: RequestInfo): Promise<void> {
 
     try {
         const result = await WebAssembly.instantiateStreaming(
-            fetch(path),
+            fetch(y3WasmPath),
             go.importObject
         );
 
@@ -31,16 +32,26 @@ export async function loadWasm(path: RequestInfo): Promise<void> {
 }
 
 /**
- * check if the URL scheme is 'ws' or 'wss'
+ * Encoder
  *
- * @param protocol - URL's scheme
+ * @param data
  */
-export function isWSProtocol(protocol: string): boolean {
-    return protocol === 'ws' || protocol === 'wss';
+export function encoder(data: any) {
+    return (window as any).encode(0x11, data).buffer;
 }
 
 /**
- * get URL's scheme
+ * Decoder
+ *
+ * @param data
+ */
+export function decoder(data: any) {
+    const uint8buf = new Uint8Array(data);
+    return (window as any).decode(0x11, uint8buf);
+}
+
+/**
+ * Get URL's scheme
  *
  * @param url - the url of the socket server to connect to
  */
@@ -53,7 +64,7 @@ export function getProtocol(url: string) {
 }
 
 /**
- * update query string parameter
+ * Update query string parameter
  *
  * @param uri Uniform Resource Identifier
  * @param key parameter key
@@ -72,5 +83,37 @@ export function updateQueryStringParameter(
         return uri.replace(re, `$1${key}=${value}$2`);
     } else {
         return `${uri}${separator}${key}=${value}`;
+    }
+}
+
+/**
+ * Function for obtaining authorised URL
+ *
+ * @param host Service url
+ * @param {IPresenceOption} option
+ *
+ * @returns Promise containing AuthorizedURL
+ */
+export async function getAuthorizedURL(host: string, option: IPresenceOption) {
+    // `publickey` is the way to test
+    // if (option?.auth?.type === 'publickey' && option.auth.publicKey) {
+    //     return updateQueryStringParameter(
+    //         host,
+    //         'public_key',
+    //         option.auth.publicKey
+    //     );
+    // }
+
+    // `token` is the way to go for production environments
+    if (option?.auth?.type === 'token' && option.auth.endpoint) {
+        try {
+            const response = await fetch(option.auth.endpoint);
+            const data = await response.json();
+            return updateQueryStringParameter(host, 'token', data.token);
+        } catch (error) {
+            throw error;
+        }
+    } else {
+        throw new Error('You are not authorized, please configure `endpoint`');
     }
 }
