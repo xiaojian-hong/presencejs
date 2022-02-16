@@ -5,7 +5,8 @@
     "yomo",
     "realtime",
     "presencejs",
-    "metaverse"
+    "metaverse",
+    "webtransport"
   ],
   "license": "MIT",
   "main": "dist/index.js",
