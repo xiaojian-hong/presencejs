@@ -12,13 +12,14 @@
 
 `Presencejs` is a JavaScript library that allows you to build real-time web applications quickly, the server is built atop of [YoMo](https://github.com/yomorun/yomo), which provide secure, low-latency, and high-performance geo-distributed services.
 
--   **Secure**, **low-latency** and **high-performance**
--   **Real-time** experience
--   Revalidation on network recovery
--   Keep Connected
--   Built-in error retry
--   TypeScript
--   WebTransport
+- **WebTransport** [Introduction: WebTransport is an API offering low-latency, bidirectional, client-server messaging.](https://web.dev/webtransport/)
+  - Fallback to WebSocket if WebTransport connection cannot be established
+- **Secure**, **low-latency** and **high-performance**
+- Support **unreliable** and **reliable** data ransmitting
+- **Real-time** experience
+- Auto Reconnection
+- Built-in error retry
+- TypeScript
 
 ...and a lot more.
 
