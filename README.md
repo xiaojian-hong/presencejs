@@ -15,7 +15,7 @@
 - **WebTransport** [Introduction: WebTransport is an API offering low-latency, bidirectional, client-server messaging.](https://web.dev/webtransport/)
   - Fallback to WebSocket if WebTransport connection cannot be established
 - **Secure**, **low-latency** and **high-performance**
-- Support **unreliable** and **reliable** data ransmitting
+- Support **unreliable** and **reliable** data transmitting
 - **Real-time** experience
 - Auto Reconnection
 - Built-in error retry
@@ -27,13 +27,15 @@ With `presencejs`, components will get data flow in real time. Thus, the UI will
 
 ## 🌟 Showcase
 
-- React Cursor Chat Component: 
+- React Cursor Chat Component:
   - Preview: https://cursor-chat-example.vercel.app
   - Source code: https://github.com/yomorun/react-cursor-chat
-- Next.js Commerce with realtime collaboration: 
+- Next.js Commerce with realtime collaboration:
   - Preview: https://commerce-ochre-sigma-86.vercel.app/
   - Source code: https://github.com/osdodo/commerce
-
+- Solid.js Cursor Chat Component:
+  - Preview: https://solid-cursor-chat-example.netlify.app
+  - Source code: https://github.com/osdodo/solid-cursor-chat
 
 ## 🥷🏼 Quick Start
 
@@ -67,11 +69,11 @@ For CDN, you can use [skypack](https://www.skypack.dev): [https://cdn.skypack.de
 
 ### 2. Connect to presence server
 
-The client need to authenticate with YoMo to establish a realtime connection. The following code sample uses a demo YoMo's server(`https://prsc.yomo.dev`) and public Key to authenticate and print the message `Connected to YoMo!` when you’ve successfully connected.
+The client need to authenticate with YoMo to establish a realtime connection. The following code sample uses a demo YoMo's server(`https://prsc.yomo.dev`) and `token` to authenticate and print the message `Connected to YoMo!` when you’ve successfully connected.
 
 #### How do I get a token?
 
-If you build your application using next.js, then you can use [API Routes](https://nextjs.org/docs/api-routes/introduction) to get the access token.
+If you build your application using Next.js, then you can use [API Routes](https://nextjs.org/docs/api-routes/introduction) to get the access token.
 For example, the following API route `pages/api/presence-auth.js` returns a json response with a status code of 200:
 
 ```js
@@ -117,7 +119,7 @@ Response data:
 }
 ```
 
-#### Create a `Presence` instance.
+#### Create a `Presence` instance
 
 ```js
 import Presence from '@yomo/presencejs';
